@@ -2,12 +2,7 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/Addons.js'
 
-import Wave from './wave'
-
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+import Plane from './plane'
 
 class App {
   constructor() {
@@ -53,8 +48,8 @@ class App {
   }
 
   createScene() {
-    this.wave = new Wave()
-    this.scene.add(this.wave.mesh)
+    this.plane = new Plane()
+    this.scene.add(this.plane.mesh)
   }
 
   createRenderer() {
@@ -65,7 +60,7 @@ class App {
     this.renderer.setSize(this.sizes.width, this.sizes.height)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.setClearColor(0x000000, 1)
-    this.renderer.toneMapping = THREE.ReinhardToneMapping
+    // this.renderer.toneMapping = THREE.ReinhardToneMapping
 
     document.body.appendChild(this.renderer.domElement)
   }
@@ -75,7 +70,7 @@ class App {
     this.controls.update()
 
     // Update wave
-    this.wave.update()
+    this.plane.update()
 
     // Render
     this.renderer.render(this.scene, this.camera)
