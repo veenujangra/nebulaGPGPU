@@ -4,6 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/Addons.js'
 
 import Plane from './plane'
 
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+
 class App {
   constructor() {
     this.sizes = {
@@ -23,9 +28,10 @@ class App {
 
     this.createElements()
     this.createCamera()
-    this.createScene()
     this.createRenderer()
+    this.createScene()
 
+    this.createEffects()
     this.createControls()
   }
 
@@ -36,7 +42,7 @@ class App {
   }
 
   createCamera() {
-    this.camera = new THREE.PerspectiveCamera(25, this.aspectRatio, 0.1, 100)
+    this.camera = new THREE.PerspectiveCamera(75, this.aspectRatio, 0.1, 100)
     this.camera.position.set(0, 0, 5)
 
     this.scene.add(this.camera)
@@ -48,8 +54,62 @@ class App {
   }
 
   createScene() {
-    this.plane = new Plane()
+    this.plane = new Plane({
+      renderer: this.renderer,
+      scene: this.scene,
+      camera: this.camera,
+    })
     this.scene.add(this.plane.mesh)
+    this.scene.add(this.plane.group)
+    // console.log(this.scene)
+  }
+
+  createEffects() {
+    this.renderPass = new RenderPass(this.scene, this.camera)
+    this.composer = new EffectComposer(this.renderer)
+    this.composer.addPass(this.renderPass)
+
+    this.effectShader = {
+      uniforms: {
+        tDiffuse: { value: null },
+        brightness: { value: 1.5 },
+        saturation: { value: 2.0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float brightness;
+        uniform float saturation;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 color = texture2D(tDiffuse, vUv);
+          color.rgb *= brightness; // Apply brightness
+          float intensity = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+          color.rgb = mix(vec3(intensity), color.rgb, saturation); // Apply saturation
+          gl_FragColor = color;
+        }
+      `,
+    }
+
+    this.shaderPass = new ShaderPass(this.effectShader)
+    this.composer.addPass(this.shaderPass)
+
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85)
+    this.composer.addPass(this.bloomPass)
+
+    this.effectShader.uniforms.brightness.value = 2.0 // Increase brightness
+    this.effectShader.uniforms.saturation.value = 3.0 // Increase saturation
+
+    this.bloomPass.strength = 2.0 // Increase bloom strength
+    this.bloomPass.radius = 2.5 // Adjust bloom radius
+    this.bloomPass.threshold = 0.8 // Change bloom threshold
   }
 
   createRenderer() {
@@ -73,7 +133,10 @@ class App {
     this.plane.update()
 
     // Render
-    this.renderer.render(this.scene, this.camera)
+    // this.renderer.render(this.scene, this.camera)
+    if (this.composer) {
+      this.composer.render()
+    }
 
     // Call tick again on the next frame
     window.requestAnimationFrame(this.update.bind(this))
