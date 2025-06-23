@@ -16,8 +16,7 @@ class App {
       height: window.innerHeight,
       aspectRatio: window.innerWidth / window.innerHeight,
     }
-
-    this.init()
+    ;(this.pixelRatio = Math.min(window.devicePixelRatio, 2)), this.init()
     this.addEventListeners()
     this.update()
     this.onResize()
@@ -101,7 +100,7 @@ class App {
     this.shaderPass = new ShaderPass(this.effectShader)
     this.composer.addPass(this.shaderPass)
 
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth * this.pixelRatio, window.innerHeight * this.pixelRatio), 1.5, 0.4, 0.85)
     this.composer.addPass(this.bloomPass)
 
     this.effectShader.uniforms.brightness.value = 2.0 // Increase brightness
